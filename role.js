@@ -16,6 +16,8 @@ Creep.prototype.getSource = function(target) {
         var source = Game.getObjectById(s);
         if (!!source.isAvailable()){
             return source;
+        } else {
+            this.releaseSource();
         }
     }
     s = this.pickSource(target);
