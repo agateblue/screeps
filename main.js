@@ -2,6 +2,7 @@ var settings = require('settings');
 var manager = require('manager');
 var log = require('log');
 var _sources = require('sources');
+var urbanist = require('urbanist');
 var clean = require('clean');
 var _room = require('room');
 var role = require('role');
@@ -15,6 +16,7 @@ module.exports.loop = function () {
     for(var r in Game.rooms) {
         var room = Game.rooms[r];
         room._init();
+        urbanist.run(room);
         room.sources = _sources.energy.init(room);
         manager.run(room);
         role.run(room);

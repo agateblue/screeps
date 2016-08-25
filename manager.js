@@ -58,20 +58,60 @@ module.exports = {
         return _.filter(room.creeps, (creep) => creep.memory.role == role);
     },
     getRolesConf: function(){
-        return settings.creeps.required.sort(function(a, b){ return a.priority > b.priority });
+        return settings.creeps.required.sort(function(a, b){
+            return b.priority - a.priority
+        });
     },
     create: function(room){
-        var _this = this;
+        if (room.energyAvailable < room.energyCapacityAvailable){
+            return;
+        }
+        var remaining = room.energyCapacityAvailable;
+        var template = this.getCreepTemplate(room);
         var required = this.getRolesConf();
-        required.forEach(function(conf){
-            var existing = _this.getCreepsByRole(room, conf.role);
+        for (var conf of required){
+            var existing = this.getCreepsByRole(room, conf.role);
             if (existing.length < conf.quantity){
-                var result = room.spawn.createCreep(conf.parts, undefined, {role: conf.role});
+                if (remaining < template.cost){
+                    break;
+                }
+                var result = room.spawn.createCreep(template.parts, undefined, {role: conf.role});
                 if (typeof result === 'string') {
                     log.info('Creep ' + result + ' created with role ' + conf.role);
                 }
+                remaining -= template.cost;
             }
-        });
+        }
+    },
+    getCreepTemplate: function(room){
+        var energy = room.energyAvailable;
+        var costs = settings.parts.costs;
+        var template = settings.parts.templates.worker;
+        var parts = [];
+        var goOn = true;
+        var iterations = 0;
+        var minimumCost = 0;
+        for (var part of template.parts){
+            var cost = costs[part];
+            minimumCost += cost;
+            parts.push(part);
+        }
+        if (minimumCost > energy){
+            log.error('Cannot build minimal template, not enough energy');
+        }
+        var currentCost = minimumCost;
 
+        while (goOn){
+            for (var part of template.parts){
+                var cost = costs[part];
+                if (currentCost + cost > energy){
+                    goOn = false;
+                    continue;
+                }
+                currentCost += cost;
+                parts.push(part);
+            }
+        }
+        return {cost: currentCost, parts: parts};
     }
 };
